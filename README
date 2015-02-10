@@ -1,0 +1,55 @@
+Texticl
+
+A Common Lisp libray that processes a markup language not completely 
+unlike textile.  It probably doesn't do exactly the same as textile 
+in any strange or borderline cases, but since I haven't seen a spec 
+for textile anywhere, I conider this excusable
+
+The input is a lump of text.  Processing is as follows:
+
+1) separate it into block-level elements:
+
+(cl-ppcre:split "\\n\\n" text)
+
+  p h[123456] bq
+
+Each element is introduced by its name followed by "." and finished by
+a blank line.  If the element name is missing, assume p
+
+(let ((tagname
+	 (cl-ppcre:scan-to-strings "^(h[1-6]|p|bq)\\." text)))
+
+  (if tagname
+      (collect (list tagname (subseq text (length tagname))))
+      (collect (list "p." text)))
+  ...)
+
+
+2) ordered and unordered lists: '^#+ ' or '^*+ ' marks the start of a
+list item; nesting depth is given by the number of hashes or stars.
+The item runs until (a) the next item, or (b) the end of para.  list
+item containers mst be created on demand when the first item of a new
+nesting level is encountered.
+
+(let ((ul-level 0) (ol-level 0))
+  (let ((els (cl-ppcre:split "\\n([#*]+)" text)))
+     (loop
+        (unless els (return))
+        
+
+
+3) within each block, look for character sequences that delimit inline
+elements
+
+" *" bold  "* "
+" _" underline  "_ "
+
+... etc
+
+repeated (non-greedy) regex substitutioms will do this easily enough
+
+(cl-ppcre:regex-replace-all "\\W_(.*?)_\\W" "some _underlined_ text and _more_ liek that" "<i>\\1</i>")
+"some<i>underlined</i>text and<i>more</i>liek that"
+CL-USER> 
+
+n) links, footnotes, tables, stuff lik that all TBD
